@@ -1,3 +1,4 @@
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
@@ -8,6 +9,8 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.HashMap;
 
 public class Bot {
@@ -76,8 +79,8 @@ public class Bot {
                 }
                 retData = new StringBuilder(String.valueOf(retData)).append(line).toString();
             }
-        } catch (Exception e) {
-            return "Error Connecting to Server: " + e;
+        } catch (Exception ex) {
+            return "Error Connecting to Server: "+ex;
         }
     }
 
@@ -86,7 +89,7 @@ public class Bot {
             this.basicReq.put("Username", this.username);
             this.basicReq.put("SessionKey", this.sessionKey);
         } catch(JSONException ex) {
-            System.out.print(ex);
+            System.out.print(ex+"5");
         }
     }
 
@@ -129,17 +132,23 @@ public class Bot {
         }
     }
 
-    public String refreshIPs() {
-        String[][] ips = new String[9][2];
-        JSONObject reqList = new JSONObject();
+    public String[][] refreshIPs() {
+        String[][] ips = new String[9][3];
+        JSONArray jArr = new JSONArray();
 
         try {
-            reqList = new JSONObject("{"+request("V2/Remote/GetIPs", this.basicReq)+"}");
+            jArr = new JSONArray(request("V2/Remote/GetIPs", this.basicReq));
+            for(int i=0; i<jArr.length(); i++) {
+                JSONObject jObject = jArr.getJSONObject(i);
+
+                ips[i][0] = (String) jObject.get("Username");
+                ips[i][1] = (String) jObject.get("IP");
+                ips[i][2] = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(Calendar.getInstance().getTime());
+            }
         } catch(JSONException ex) {
             System.out.print(ex);
         }
-
-        return reqList.toString();
+        return ips;
     }
 
     public String scan(String attack, String targetIP) {
