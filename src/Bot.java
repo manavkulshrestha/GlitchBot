@@ -17,9 +17,10 @@ public class Bot {
     public String username;
     public String sessionKey;
     public String money;
-    public String premium;
-    public String rank;
-    public String reputation;
+    public int premium;
+    public int rank;
+    public int reputation;
+    public String bank;
     public HashMap<String, String> stats = new HashMap();
     public JSONObject basicReq = new JSONObject();
 
@@ -29,6 +30,7 @@ public class Bot {
 
         buildBasicReq();
         updateInfo();
+        updateBankInfo();
     }
 
     public Bot(String username, String password) {
@@ -56,7 +58,7 @@ public class Bot {
 
         buildBasicReq();
         updateInfo();
-
+        updateBankInfo();
     }
 
     public String request(String addOn, JSONObject data) {
@@ -123,18 +125,18 @@ public class Bot {
         }
 
         try {
-            this.money = (String) jInfo.get("Money");
-            this.premium = (String) jInfo.get("Premium");
-            this.rank = Integer.toString((int)jInfo.get("Rank"));
-            this.reputation = (String) jInfo.get("Reputation");
+            this.money = (String)jInfo.get("Money");
+            this.premium = Integer.parseInt((String)jInfo.get("Premium"));
+            this.rank = (int)jInfo.get("Rank");//only this is an int for some godforsaken reason
+            this.reputation = Integer.parseInt((String)jInfo.get("Reputation"));
         } catch(JSONException ex) {
             System.out.print(ex);
         }
     }
 
     public String[][] refreshIPs() {
-        String[][] ips = new String[9][3];
-        JSONArray jArr = new JSONArray();
+        String[][] ips = new String[9][4];
+        JSONArray jArr;
 
         try {
             jArr = new JSONArray(request("V2/Remote/GetIPs", this.basicReq));
@@ -143,7 +145,8 @@ public class Bot {
 
                 ips[i][0] = (String) jObject.get("Username");
                 ips[i][1] = (String) jObject.get("IP");
-                ips[i][2] = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(Calendar.getInstance().getTime());
+                ips[i][2] = (String) jObject.get("CanAttack");
+                ips[i][3] = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(Calendar.getInstance().getTime());
             }
         } catch(JSONException ex) {
             System.out.print(ex);
@@ -183,6 +186,42 @@ public class Bot {
         }
 
         return request("V2/Software/UpgradeSoftware", info);
+    }
+
+    public String deposit(String amount) {
+        JSONObject info = this.basicReq;
+        try {
+            info.put("Value", amount);
+        } catch(JSONException ex) {
+            System.out.print(ex);
+        }
+
+        return request("V2/Bank/DepositFunds", info);
+    }
+
+    public String withdraw(String amount) {
+        JSONObject info = this.basicReq;
+        try {
+            info.put("Value", amount);
+        } catch(JSONException ex) {
+            System.out.print(ex);
+        }
+
+        return request("V2/Bank/WithdrawFunds", info);
+    }
+
+    public void updateBankInfo() {
+        JSONObject bankInfo;
+        try {
+            bankInfo = new JSONObject(request("V2/Bank/GetBankInfo", this.basicReq));
+            this.money =(String)bankInfo.get("Money");
+            this.bank = (String)bankInfo.get("BankValue");
+            this.premium = Integer.parseInt((String)bankInfo.get("Premium"));
+        } catch(JSONException ex) {
+            System.out.print(ex);
+        }
+
+        request("V2/Bank/GetBankInfo", this.basicReq);
     }
 }
 
